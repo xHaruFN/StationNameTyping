@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>駅名標タイピングゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 🔊 効果音の読み込み -->
+    <audio id="decision-sound" src="決定ボタンを押す32.mp3" preload="auto"></audio>
+    <audio id="error-sound" src="ビープ音4.mp3" preload="auto"></audio>
+
+    <div class="hud">
+        <div>路線: <span id="route-name">未選択</span></div>
+        <div>TIME: <span id="time">45</span>s</div>
+        <div>SCORE: <span id="score">0</span></div>
+        <div>STATIONS: <span id="count">0</span></div>
+    </div>
+
+    <div class="game-stage">
+        <!-- ⚙️ 設定の歯車ボタン -->
+        <button class="settings-gear-btn" id="open-settings-btn" title="設定">⚙️</button>
+
+        <!-- スタート・路線選択画面 -->
+        <div class="overlay" id="start-overlay">
+            <h2>🚉 駅名標タイピングゲーム</h2>
+            <p id="select-guide">会社・エリアを選んでください</p>
+
+            <!-- 第1階層：会社・全国・すべて選択 -->
+            <div class="menu-grid" id="company-menu">
+                <button class="menu-btn nation-btn" data-route="all">🌏 全国（全路線）</button>
+                <button class="menu-btn nation-btn" data-route="jreast_all">🟢 JR東日本 すべて</button>
+                <button class="menu-btn nation-btn" data-route="jrwest_all">🔵 JR西日本 すべて</button>
+                <button class="menu-btn company-btn" data-company="jreast">🟢 JR東日本エリア ▸</button>
+                <button class="menu-btn company-btn" data-company="jrwest">🔵 JR西日本エリア ▸</button>
+                <button class="menu-btn records-open-btn" id="open-records-btn" style="grid-column: span 2;">🏆 自己記録を見る</button>
+            </div>
+
+            <!-- 第2階層：JR東日本 路線メニュー -->
+            <div class="menu-grid hidden" id="jreast-menu">
+                <button class="menu-btn route-btn" data-route="yamanote">山手線</button>
+                <button class="menu-btn route-btn" data-route="yokosuka_sobu">横須賀線・総武快速線(成田線)</button>
+                <button class="menu-btn route-btn" data-route="chuo_sobu_local">中央・総武線(各駅停車)</button>
+                <button class="menu-btn route-btn" data-route="keiyo">京葉線</button>
+                <button class="menu-btn route-btn" data-route="keihin_tohoku_negishi">京浜東北・根岸線</button>
+                <button class="menu-btn route-btn" data-route="narita_main">成田線（本線）</button>
+                <button class="menu-btn route-btn" data-route="narita_abiko">成田線（我孫子支線）</button>
+                <button class="menu-btn route-btn" data-route="sobu_main">総武本線（千葉〜銚子）</button>
+                <button class="menu-btn route-btn" data-route="sotobo">外房線</button>
+                <button class="menu-btn route-btn" data-route="uchibo">内房線</button>
+                <button class="menu-btn back-btn" id="back-jreast" style="grid-column: span 2;">← 会社選択に戻る</button>
+            </div>
+
+            <!-- 第2階層：JR西日本 路線メニュー -->
+            <div class="menu-grid hidden" id="jrwest-menu">
+                <button class="menu-btn route-btn" data-route="tokaido_sanyo">JR京都線・神戸線</button>
+                <button class="menu-btn route-btn" data-route="osaka_loop">大阪環状線</button>
+                <button class="menu-btn back-btn" id="back-jrwest" style="grid-column: span 2;">← 会社選択に戻る</button>
+            </div>
+        </div>
+
+        <!-- モード選択ポップアップ（路線選択後に表示） -->
+        <div class="overlay hidden" id="mode-select-overlay">
+            <h2>🎮 モード選択</h2>
+            <p id="selected-route-title" style="margin-bottom: 20px; font-weight: bold; color: #38bdf8;"></p>
+            <div style="display: flex; flex-direction: column; gap: 12px; width: 240px;">
+                <button class="menu-btn route-btn" id="mode-normal-btn" style="background: #059669; border-color: #10b981;">通常モード</button>
+                <button class="menu-btn route-btn" id="mode-hard-btn" style="background: #b91c1c; border-color: #ef4444;">🔥 ハードモード</button>
+                <button class="menu-btn back-btn" id="mode-back-btn">← 路線選び直す</button>
+            </div>
+        </div>
+
+        <!-- 🏆 自己記録ポップアップ画面 -->
+        <div class="overlay hidden" id="records-overlay">
+            <h2>🏆 ハイスコア（自己記録）</h2>
+            <div class="records-panel-modal">
+                <ul class="records-list" id="records-list">
+                    <!-- JavaScriptで動的に挿入されます -->
+                </ul>
+            </div>
+            <button class="menu-btn route-btn" id="close-records-btn" style="margin-top: 10px; width: 220px;">閉じる</button>
+        </div>
+
+        <!-- ⚙️ 設定ポップアップ画面 -->
+        <div class="overlay hidden" id="settings-overlay">
+            <h2>⚙️ 設定</h2>
+            <div style="margin: 20px 0; display: flex; flex-direction: column; gap: 10px; width: 240px; position: relative; z-index: 105;">
+                <button class="menu-btn route-btn" id="back-to-select-btn" style="background: #b91c1c; border-color: #ef4444;">🔄 路線選択に戻る</button>
+                <button class="menu-btn route-btn" id="close-settings-btn">設定を閉じる</button>
+            </div>
+        </div>
+
+        <!-- 終了画面 -->
+        <div class="overlay hidden" id="result-overlay">
+            <h2>🏁 運転終了</h2>
+            <p id="result-text"></p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button class="menu-btn route-btn" id="retry-btn" style="width: 140px; background: #059669; border-color: #10b981;">もう一度プレイ</button>
+                <button class="menu-btn route-btn" id="restart-btn" style="width: 140px;">路線選択に戻る</button>
+            </div>
+        </div>
+
+        <!-- 駅名標エリア -->
+        <div class="sign-container">
+            <!-- 待機中用黒背景カバー -->
+            <div class="ready-cover hidden" id="ready-cover">
+                [スペース または Enter で開始]
+            </div>
+
+            <div class="station-info">
+                <div class="kanji" id="kanji">東京</div>
+                <div class="kana" id="kana">とうきょう</div>
+            </div>
+            <div class="typing-area" id="typing-box">
+                <span class="typed" id="typed"></span><span class="untyped" id="untyped">toukyou</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
